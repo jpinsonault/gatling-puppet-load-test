@@ -1,5 +1,7 @@
 package com.puppetlabs.gatling.runner
 
+import java.sql.{Date, Timestamp}
+
 import io.gatling.core.Predef._
 import io.gatling.http.Predef._
 
@@ -17,6 +19,7 @@ class ConfigDrivenSimulation extends Simulation {
 
   val REPETITION_COUNTER: String = "repetitionCounter"
   val SLEEP_DURATION: String = "nextSleepDuration"
+  val ORIGINAL_START_DATE: String = "originalStartDate"
 
   def addSleeps(chain:ChainBuilder, sleepDuration:Int, totalNumReps:Int): ChainBuilder = {
     // This is kind of a dirty hack. Here's the deal.
@@ -59,11 +62,17 @@ class ConfigDrivenSimulation extends Simulation {
       session
         .set(REPETITION_COUNTER, repetitionCount)
         .set(SLEEP_DURATION, nextSleepDuration)
+        .set(ORIGINAL_START_DATE, session.startDate)
     }).doIf((session) => session(REPETITION_COUNTER).as[Int] < totalNumReps) {
       exec((session) => {
         val nextSleepDuration = session(SLEEP_DURATION).as[Long] / 1000.0
+        val nextRunTime = new Timestamp(System.currentTimeMillis() + session(SLEEP_DURATION).as[Long])
+        val startDateString = new Timestamp(session.startDate)
+        val originalStartDateString = new Timestamp(session(ORIGINAL_START_DATE).as[Long])
 
-        println(s"This is not the last repetition; sleeping ${nextSleepDuration}s to match ${sleepDuration}s cycle")
+        println("This is not the last repetition;\n" +
+          s"sleeping ${nextSleepDuration}s until $nextRunTime to match ${sleepDuration}s cycle\n" +
+          s"Current startDate: $startDateString, Original startDate: $originalStartDateString")
         session
       }).pause((session) => session(SLEEP_DURATION).as[Long] milliseconds)
     }.doIf((session) => session(REPETITION_COUNTER).as[Int] >= totalNumReps) {
