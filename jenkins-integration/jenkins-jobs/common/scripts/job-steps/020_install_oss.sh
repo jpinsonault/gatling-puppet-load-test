@@ -24,8 +24,6 @@ bundle exec beaker \
         --tests \
 beaker/install/shared/hack_hostname_into_etc_hosts.rb,\
 beaker/install/shared/disable_firewall.rb,\
-beaker/install/foss/30_install_dev_repos.rb,\
-beaker/install/foss/70_install_puppet.rb,\
 beaker/install/shared/configure_permissive_server_auth.rb,\
 beaker/install/shared/99_restart_server.rb,\
 beaker/install/foss/80_run_agent_on_master.rb
