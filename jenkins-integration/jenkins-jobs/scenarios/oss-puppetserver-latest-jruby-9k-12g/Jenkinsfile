@@ -4,7 +4,7 @@ node {
 }
 
 pipeline.single_pipeline([
-        job_name: 'oss-latest-9k',
+        job_name: 'oss-latest-9k-12GB-heap',
         gatling_simulation_config: '../simulation-runner/config/scenarios/foss25x-medium-json-1250-2-hours.json',
         server_version: [
                 type: "oss",
@@ -24,6 +24,6 @@ pipeline.single_pipeline([
                 "/var/log/puppetlabs/puppetserver/metrics.json",
                 "/var/log/puppetlabs/puppetserver/puppetserver.log"
         ],
-        server_java_args: "-Xms3g -Xmx3g",
+        server_java_args: "-Xms12g -Xmx12g",
         jruby_jar: "/opt/puppetlabs/server/apps/puppetserver/jruby-9k.jar"
 ])
