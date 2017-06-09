@@ -24,6 +24,6 @@ pipeline.single_pipeline([
                 "/var/log/puppetlabs/puppetserver/metrics.json",
                 "/var/log/puppetlabs/puppetserver/puppetserver.log"
         ],
-        server_java_args: "-Xms3g -Xmx3g",
+        server_java_args: "-Xms2g -Xmx2g",
         jruby_jar: "/opt/puppetlabs/server/apps/puppetserver/jruby-9k.jar"
 ])

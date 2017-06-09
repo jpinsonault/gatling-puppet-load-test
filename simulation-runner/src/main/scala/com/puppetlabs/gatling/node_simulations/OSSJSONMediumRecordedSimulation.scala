@@ -24,7 +24,7 @@ class OSSJSONMediumRecordedSimulation extends SimulationWithScenario {
 		"X-Puppet-Version" -> "5.0.0")
 
 	val headers_127 = Map(
-		"Content-Type" -> "text/pson",
+		"Content-Type" -> "application/json",
 		"X-Puppet-Version" -> "5.0.0",
 		"Connection" -> "close")
 //
