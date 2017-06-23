@@ -11,5 +11,5 @@ while true ; do
   # * if we log metrics every 5 minutes, that's 20610 / 5 = 4122 log entries
   # * each log entry appears to be about 8k, so over a 2 week run this metrics
   #   file would get up to about 32MB, which seems tolerable.
-  sleep 300
+  sleep 10
 done
