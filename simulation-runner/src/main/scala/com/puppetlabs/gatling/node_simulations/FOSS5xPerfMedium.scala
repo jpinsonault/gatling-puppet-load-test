@@ -14,19 +14,21 @@ class FOSS5xPerfMedium extends SimulationWithScenario {
 
 // 	val httpProtocol = http
 // 		.baseURL("https://puppetserver-perf-sut57.delivery.puppetlabs.net:8140")
+// 		.acceptHeader("application/json, text/pson")
+// 		.acceptEncodingHeader("gzip;q=1.0,deflate;q=0.6,identity;q=0.3")
+// 		.userAgentHeader("Puppet/5.0.0 Ruby/2.4.1-p111 (x86_64-linux)")
 
 	val reportBody = ElFileBody("FOSS5xPerfMedium_0127_request.txt")
-		.acceptHeader("application/json, text/pson")
-		.acceptEncodingHeader("gzip;q=1.0,deflate;q=0.6,identity;q=0.3")
-		.userAgentHeader("Puppet/5.0.0 Ruby/2.4.1-p111 (x86_64-linux)")
 
-	val headers_0 = Map("X-Puppet-Version" -> "5.0.0")
+	val baseHeaders = Map("Accept" -> "application/json, text/pson",
+		"Accept-Encoding" -> "gzip;q=1.0,deflate;q=0.6,identity;q=0.3",
+		"User-Agent" -> "Puppet/5.0.0 Ruby/2.4.1-p111 (x86_64-linux)")
 
-	val headers_127 = Map(
+	val headers_0 = baseHeaders ++ Map("X-Puppet-Version" -> "5.0.0")
+
+	val headers_127 = baseHeaders ++ Map(
 		"Content-Type" -> "application/json",
-		"X-Puppet-Version" -> "5.0.0",
-		"Connection" -> "close")
-//
+		"X-Puppet-Version" -> "5.0.0")
 // val uri1 = "https://puppetserver-perf-sut57.delivery.puppetlabs.net:8140/puppet/v3"
 
 	val chain_0 = exec(http("node")

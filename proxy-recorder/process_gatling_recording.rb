@@ -8,6 +8,12 @@ end
 
 require 'json'
 
+HELPER_TO_HEADER = {
+    "acceptHeader" => "Accept",
+    "acceptEncodingHeader" => "Accept-Encoding",
+    "userAgentHeader" => "User-Agent"
+}
+
 TERMINOLOGY = {
   "catalog"                                                 => "catalog",
   "file_metadata[s]?/modules/puppet_enterprise/mcollective" => "filemeta mco plugins",
@@ -166,6 +172,15 @@ def generate_node_config(simulation_class, certname)
   puts "Wrote node config file to '#{node_config_file}'"
 end
 
+# Creates a scala map from a ruby hash
+def generate_scala_map(new_hash)
+  inner = new_hash.map {|k, v| "\"#{k}\" -> \"#{v}\""}.join(",\n\t\t")
+
+  "Map(#{inner})"
+end
+
+######################
+#### Steps
 
 def step1_look_for_inferred_html_resources(text)
   puts "STEP 1: Look for inferred HTML resources"
@@ -221,25 +236,69 @@ def step5_update_extends(text)
   text.gsub!(/^class (.*) extends Simulation/, 'class \1 extends SimulationWithScenario')
 end
 
+def step_extract_http_protocol_headers(text)
+  lines = text.lines
+  found_header_data = {}
+
+  http_protocol_start = lines.find_index {|line| line.match(/^.*val httpProtocol/)}
+
+  if http_protocol_start.nil?
+    puts "Can't find headers after httpProtocol definition"
+    exit 1
+  end
+
+  index = http_protocol_start + 2
+  loop do
+    matches = lines[index].match(/\.(?<header_name>[^(]+)\(\"(?<header_value>[^"]+)\"\)/)
+    if matches.nil?
+      break
+    end
+
+    header_name = HELPER_TO_HEADER[matches[:header_name]]
+    header_value = matches[:header_value]
+
+    found_header_data[header_name] = header_value
+    index += 1
+  end
+
+  found_header_data
+end
+
+def step_add_extracted_headers(text, headers)
+  # Match until 2 newlines, meaning the whole block of code
+  multiline_http_protocol_regex = /(val httpProtocol.*?)(?=\n\n)/m
+  header_map_string = generate_scala_map(headers)
+
+  text = text.gsub(multiline_http_protocol_regex, "\\1\n\n\tval baseHeaders = #{header_map_string}")
+
+  text = text.gsub(/(val headers_\d+ = )/, '\1baseHeaders ++ ')
+
+  puts text[0, 1000]
+
+  text
+end
+
 # Step 6
 def step6_comment_out_http_protocol(text)
   puts "STEP 6: Comment out `httpProtocol` variable"
-  begin_comment = false
-  end_comment = false
+  found_begin_comment = false
+  found_end_comment = false
 
   out_text = text.lines.map do |line|
-    retline = ""
-    begin_comment = true if line.match(/^.*val httpProtocol/)
-    if begin_comment && !end_comment
+    found_begin_comment = true if line.match(/^.*val httpProtocol/)
+    found_end_comment = true if found_begin_comment && line.match(/^$/)
+    if found_begin_comment && !found_end_comment
       retline = comment_line(line)
     else
       retline = line
     end
     # This end check won't work with long chains
-    end_comment = true if line.match(/\..*\)/)
+
     retline
   end
   out_text.flatten.join
+
+  # puts text.gsub(multiline_http_protocol_regex, )
 end
 
 # Step 7
@@ -298,9 +357,12 @@ end
 
 # Step 12
 def step12_add_dynamic_timestamp(text, report_text, report_request_info)
+  # Match until 2 newlines, meaning the whole block of code
+  multiline_http_protocol_regex = /(\/\/\s*val httpProtocol.*?)(?=\n\n)/m
+
   puts "STEP 12: Use dynamic timestamp and transaction UUID"
-  text.gsub!(/(\/\/\s*val httpProtocol[^\n]+\n\/\/\s*\.baseURL\([^\n]+\n)/,
-             "\\1\n\tval reportBody = ElFileBody(\"#{report_request_info[:request_txt_file]}\")\n")
+  text.gsub!(multiline_http_protocol_regex,
+             "\\1\n\n\tval reportBody = ElFileBody(\"#{report_request_info[:request_txt_file]}\")")
 
   report_session_vars = <<EOS
 
@@ -333,7 +395,7 @@ end
 
 def main(infile, outfile)
 
-  validate_infile_path(infile)
+  # validate_infile_path(infile)
 
   # The main event.
   # the input file tends to not end in a newline, which gets messy later
@@ -355,7 +417,13 @@ def main(infile, outfile)
   output = step3_add_new_imports(output)
   step4_remove_unneeded_import(output)
   step5_update_extends(output)
+
+  headers = step_extract_http_protocol_headers(output)
+
+  output = step_add_extracted_headers(output, headers)
+
   output = step6_comment_out_http_protocol(output)
+
   step7_add_connection_close(output, report_request_info[:request_headers_varname])
   step8_comment_out_uri1(output)
   step9_update_expiration(output)
@@ -373,6 +441,7 @@ def main(infile, outfile)
   puts
 
   node_config = find_node_config(simulation_classname)
+  node_config = true
   if node_config
     puts "Found existing node config at '#{node_config}'"
   else
