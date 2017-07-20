@@ -27,6 +27,6 @@ pipeline.multipass_pipeline([
                 archive_sut_files: [
                         "/var/log/puppetlabs/puppetserver/metrics.json"
                 ],
-                server_java_args: "-XX:+UseG1GC -XX:+UseStringDeduplication",
+                server_java_args: "-Xms2g -Xmx2g -XX:+UseG1GC -XX:+UseStringDeduplication",
                 jruby_jar: "/opt/puppetlabs/server/apps/puppetserver/jruby-9k.jar"
         ]])
